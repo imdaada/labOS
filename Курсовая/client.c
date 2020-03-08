@@ -20,10 +20,85 @@
 #include <arpa/inet.h>
 #include <errno.h>
 
+void tontohs (int*a)
+{
+    for (int i=0; i<9; i++)
+        {
+            a[i]=ntohs(a[i]);
+        }
+}
+void tohtons (int*a)
+{
+    for (int i=0; i<9; i++)
+        {
+            a[i]=htons(a[i]);
+        }
+}
+void printGame (int*mas)
+{
+    for (int i=0; i<9; i++)
+    {
+        if (mas[i]==0) printf(".");
+        else if (mas[i]==1) printf("0");
+        else printf("x");
+        if ((i==2)||(i==5)||(i==8)) printf("\n");
+    }
+}
 
 void game(int sockfd)
 {
-while (1);
+    int ind;
+    int mas[9];
+    read (sockfd, mas, 9*sizeof(int));
+    tontohs (mas);
+    printGame (mas);
+    int r[2];
+    while (1)
+    {
+        read (sockfd, &ind, sizeof(int));
+        ind = ntohs (ind);
+        if (ind == 1) //ход
+        {
+            while (1)
+            {
+                int check;
+                printf ("Enter coordinates\n");
+                scanf ("%d", &r[0]);
+                scanf ("%d", &r[1]);
+                r[0]=htons(r[0]);
+                r[1]=htons(r[1]);
+                write (sockfd, r, 2*sizeof(int));
+                read (sockfd, &check, sizeof(int));
+                if (check==0) break;
+            }
+            read (sockfd, mas, 9*sizeof(int));
+            tontohs (mas);
+            printGame (mas);
+        }
+        if (ind==0)
+        {
+            printf("Wait...\n");
+            read (sockfd, mas, 9*sizeof(int));
+            tontohs (mas);
+            printGame (mas);
+        }
+        if (ind==2)
+        {
+            printf("You Win\n");
+	    break;
+        }
+        if (ind==3)
+        {
+            printf("You Lose\n");
+	    break;
+        }
+        if (ind==4)
+        {
+            printf("Stand-off\n");
+	    break;
+        }
+    }
+    
 }
 
 	int main(int argc, char *argv[]) {
