@@ -19,6 +19,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <time.h>
 
 int getMode (int connfd)
 {
@@ -108,7 +109,7 @@ int checkWin (int *mas)
     {
         return 2;
     }
-    if((mas[0]!=0)&&(mas[1]!=0)&&(mas[2]!=0)&&(mas[3]!=0)&&(mas[4]!=0)&&(mas[5]!=0)&&(mas[6]!=0)&&(mas[7]!=0)&&(mas[8]!=2))
+    if((mas[0]!=0)&&(mas[1]!=0)&&(mas[2]!=0)&&(mas[3]!=0)&&(mas[4]!=0)&&(mas[5]!=0)&&(mas[6]!=0)&&(mas[7]!=0)&&(mas[8]!=0))
     {
         return 3;
     }
@@ -197,6 +198,8 @@ void gamevsMan (int connfd1, int connfd2)
                 write (connfd1, &ind, sizeof(int)); //2 - код победы
                 ind=htons(3);
                 write (connfd2, &ind, sizeof(int)); //3 - код проигрыша
+                close (connfd1);
+            close (connfd2);
 		break;
             }
             else if (checkWin(mas)==2)
@@ -205,6 +208,8 @@ void gamevsMan (int connfd1, int connfd2)
                 write (connfd2, &ind, sizeof(int)); //2 - код победы
                 ind=htons(3);
                 write (connfd1, &ind, sizeof(int)); //3 - код проигрыша
+                close (connfd1);
+            close (connfd2);
 		break;
             }
             else if (checkWin(mas)==3)
@@ -212,15 +217,97 @@ void gamevsMan (int connfd1, int connfd2)
                 ind=htons(4);
                 write (connfd1, &ind, sizeof(int)); //4 - ничья
                 write (connfd2, &ind, sizeof(int)); 
+                close (connfd1);
+            close (connfd2);
 		break;
             }
         }
 
 }
 
-void gamevsPC (int connfd)
+void gamevsPC (int connfd1)
 {
+    int mas[9]; //игровое поле
+        for (int i=0; i<9; i++)
+        {
+            mas[i]=0;
+        }
+        tohtons(mas);
+        write (connfd1, mas, 9*sizeof(int));
+        tontohs(mas);
+        int q=0;
+        int ind;
+        int r[2];
+        while(1)
+        {
+            if(q%2==0) //ход 1 игока
+            {
+                ind=htons(1);
+                write (connfd1, &ind, sizeof(int));
+                while (1)
+                {
+                    read (connfd1, r, 2*sizeof(int));
+                    r[0]=ntohs(r[0]);
+                    r[1]=ntohs(r[1]);
+                    if (mas[(r[0]-1)*3+(r[1]-1)]==0)
+                    {
+                        ind=htons(0);
+                        write (connfd1, &ind, sizeof(int)); //0-успешный ход
+                        mas[(r[0]-1)*3+(r[1]-1)]=1;
+                        tohtons(mas);
+                        write (connfd1, mas, 9*sizeof(int));
+                        tontohs(mas);
+                        break;
+                    }
+                    else
+                    {
+                        ind=htons(9);
+                        write (connfd1, &ind, sizeof(int)); //9-неправильный ход
+                    }
 
+                }
+            }
+            else //ход 2 игока
+            {
+                ind=htons(0);
+                write (connfd1, &ind, sizeof(int));
+                while (1)
+                {
+                    srand(time(NULL));
+                    int random = rand()%9;
+                    if (mas[random]==0)
+                    {
+                        mas[random]=2;
+                        tohtons(mas);
+                        write (connfd1, mas, 9*sizeof(int));
+                        tontohs(mas);
+                        break;
+                    }
+                }
+            }
+            q++;
+            if (checkWin(mas)==1)
+            {
+                ind=htons(2);
+                write (connfd1, &ind, sizeof(int)); //2 - код победы
+                close (connfd1);
+		break;
+            }
+            else if (checkWin(mas)==2)
+            {
+                ind=htons(3);
+                write (connfd1, &ind, sizeof(int)); //3 - код проигрыша
+                close (connfd1);
+		break;
+            }
+            else if (checkWin(mas)==3)
+            {
+                ind=htons(4);
+                write (connfd1, &ind, sizeof(int)); //4 - ничья
+                close (connfd1);
+		break;
+            }
+        }
 }
 
 
@@ -277,8 +364,7 @@ int main(int argc, char *argv[]) {
 
 
 
-            close (connfd1);
-            close (connfd2);
+            
             //break;
         }
 }
